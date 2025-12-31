@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Simple Sudoku Chill</title>
     <!-- Three.js for the 3D Hero Animation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -25,6 +25,7 @@
             --completion-flash: rgba(255, 255, 255, 0.6);
             --disabled-num: #d1d5db;
             --win-glow: rgba(214, 158, 158, 0.4);
+            --modal-bg: rgba(255, 255, 255, 0.8);
         }
 
         [data-theme="night"] {
@@ -45,6 +46,7 @@
             --completion-flash: rgba(255, 204, 175, 0.4);
             --disabled-num: #1a1512;
             --win-glow: rgba(255, 204, 175, 0.2);
+            --modal-bg: rgba(20, 15, 12, 0.9);
         }
 
         [data-theme="lavender"] {
@@ -65,6 +67,7 @@
             --completion-flash: rgba(255, 255, 255, 0.5);
             --disabled-num: #cbd5e1;
             --win-glow: rgba(185, 177, 214, 0.4);
+            --modal-bg: rgba(243, 240, 255, 0.9);
         }
 
         [data-theme="forest"] {
@@ -85,6 +88,7 @@
             --completion-flash: rgba(255, 255, 255, 0.5);
             --disabled-num: #cbd5e1;
             --win-glow: rgba(168, 187, 168, 0.4);
+            --modal-bg: rgba(240, 244, 240, 0.9);
         }
 
         [data-theme="ocean"] {
@@ -105,6 +109,7 @@
             --completion-flash: rgba(255, 255, 255, 0.2);
             --disabled-num: #020617;
             --win-glow: rgba(56, 189, 248, 0.2);
+            --modal-bg: rgba(15, 23, 42, 0.9);
         }
 
         body {
@@ -122,6 +127,43 @@
             touch-action: manipulation;
         }
 
+        /* --- Header & Safe Areas --- */
+        header {
+            width: 100%;
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-weight: 200;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin: 0;
+        }
+
+        .settings-trigger {
+            position: absolute;
+            right: 20px;
+            top: max(20px, env(safe-area-inset-top));
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+
+        .settings-trigger:hover { opacity: 1; }
+
         /* --- Views Management --- */
         .view {
             display: none;
@@ -129,7 +171,7 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            padding: 20px 10px;
+            padding: 10px;
             box-sizing: border-box;
         }
 
@@ -143,34 +185,30 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        #menu-view { justify-content: center; min-height: 100vh; }
+        #menu-view { justify-content: flex-start; padding-top: 20px; }
 
-        /* --- Hero 3D Container --- */
         #hero3DContainer {
-            width: 300px;
-            height: 300px;
+            width: 260px;
+            height: 260px;
             margin-bottom: 20px;
             cursor: grab;
-            position: relative;
         }
-
-        #hero3DContainer:active { cursor: grabbing; }
 
         .menu-options {
             width: 100%;
             max-width: 300px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
 
         .menu-btn {
             background-color: var(--button-bg);
             color: var(--text-main);
             border: 1px solid var(--line-thin);
-            padding: 18px;
+            padding: 16px;
             border-radius: 16px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
             text-align: center;
             transition: all 0.4s ease;
@@ -179,10 +217,7 @@
             font-weight: 300;
         }
 
-        .menu-btn:hover {
-            background-color: var(--button-hover);
-            transform: translateY(-2px);
-        }
+        .menu-btn:active { transform: scale(0.98); opacity: 0.8; }
 
         .folder-content {
             max-height: 0;
@@ -190,84 +225,118 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             padding: 0 10px;
             background: rgba(0,0,0,0.03);
             border-radius: 16px;
-            margin-top: -10px;
-            transition: max-height 0.6s ease-in-out, opacity 0.5s ease-in-out, padding 0.6s ease-in-out;
+            transition: max-height 0.6s ease-in-out, opacity 0.5s ease-in-out;
         }
 
         .folder-content.open {
-            max-height: 500px; 
+            max-height: 400px; 
             opacity: 1;
             padding: 10px;
-            margin-top: -10px;
             margin-bottom: 10px;
         }
 
-        .diff-btn { padding: 12px; font-size: 0.9rem; letter-spacing: 1px; opacity: 0.9; }
+        .diff-btn { padding: 10px; font-size: 0.85rem; }
 
-        .settings-header {
-            margin-top: 30px;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            opacity: 0.5;
-            text-align: center;
-        }
-
-        .theme-selector {
+        /* --- Settings Modal --- */
+        #settings-modal {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
 
-        .current-theme-dot {
+        #settings-modal.active { display: flex; opacity: 1; }
+
+        .modal-content {
+            background: var(--modal-bg);
+            width: 85%;
+            max-width: 340px;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            transition: transform 0.4s ease;
+            border: 1px solid var(--line-thin);
+        }
+
+        #settings-modal.active .modal-content { transform: translateY(0); }
+
+        .modal-title {
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .setting-label { font-size: 0.9rem; letter-spacing: 1px; }
+
+        .theme-picker {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 10px;
+            margin-bottom: 30px;
+        }
+
+        .theme-opt {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background-color: var(--text-main);
-            border: 2px solid var(--line-thick);
+            border: 2px solid transparent;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
         }
+        .theme-opt.active { border-color: var(--line-thick); transform: scale(1.1); }
 
-        .theme-menu {
-            margin-top: 10px;
-            background: var(--grid-bg);
-            border: 1px solid var(--line-thin);
-            padding: 10px;
-            border-radius: 12px;
-            display: none;
-            gap: 10px;
-            box-shadow: 0 10px 25px var(--card-shadow);
-        }
-
-        .theme-menu.active { display: flex; }
-
-        .theme-option {
-            width: 24px;
+        /* --- Toggle Switch --- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
             height: 24px;
-            border-radius: 50%;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
             cursor: pointer;
-            border: 1px solid rgba(0,0,0,0.1);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--button-bg);
+            transition: .4s;
+            border-radius: 24px;
         }
-
-        h1.game-title {
-            font-weight: 300;
-            letter-spacing: 4px;
-            margin: 10px 0 10px 0;
-            color: var(--text-main);
-            text-transform: uppercase;
-            font-size: 1rem;
-            text-align: center;
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background-color: var(--text-main);
+            transition: .4s;
+            border-radius: 50%;
         }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(20px); }
 
+        /* --- Game View Styling --- */
         .game-stats-header {
             display: flex;
             justify-content: space-between;
@@ -295,9 +364,8 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
-            margin-top: 20px;
+            margin-top: 15px;
             max-width: 450px;
-            width: 100%;
         }
 
         .num-btn {
@@ -309,25 +377,17 @@
             background-color: var(--button-bg);
             color: var(--text-main);
             border: 1px solid var(--line-thin);
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1.2rem;
             cursor: pointer;
             user-select: none;
             transition: all 0.3s ease;
         }
 
-        .num-btn.completed {
-            background-color: var(--disabled-num);
-            opacity: 0.3;
-            pointer-events: none;
-            border-color: transparent;
-        }
-
-        .num-btn:active { transform: scale(0.9); }
-
+        .num-btn.completed { background-color: var(--disabled-num); opacity: 0.2; pointer-events: none; }
         .num-btn.clear { font-size: 0.9rem; font-weight: bold; }
 
-        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        .controls { margin-top: 15px; display: flex; gap: 10px; }
 
         .ui-btn {
             background-color: transparent;
@@ -335,34 +395,33 @@
             border: 1px solid var(--line-thin);
             padding: 8px 20px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .status {
-            margin-top: 15px;
-            font-size: 0.75rem;
+            margin-top: 10px;
+            font-size: 0.7rem;
             letter-spacing: 1px;
             opacity: 0.6;
-            color: var(--accent-color);
-            transition: opacity 1s ease;
             text-align: center;
             min-height: 1.2rem;
             padding: 0 20px;
+            transition: opacity 1s;
         }
 
         .status.fade-out { opacity: 0; }
 
-        /* Win Overlay */
+        /* --- Win Overlay --- */
         #win-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: transparent;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            z-index: 1000;
+            z-index: 3000;
             display: none;
             flex-direction: column;
             align-items: center;
@@ -372,54 +431,54 @@
             opacity: 0;
             transition: opacity 3s ease;
         }
-
         #win-overlay.active { display: flex; opacity: 1; }
-
-        .win-msg { 
-            font-size: 1.8rem; 
-            font-weight: 200; 
-            letter-spacing: 8px; 
-            margin-bottom: 20px; 
-            text-transform: uppercase; 
-            animation: driftUp 3s ease forwards;
-        }
-
-        .win-stats { 
-            font-size: 0.9rem; 
-            opacity: 0.7; 
-            line-height: 2; 
-            margin-bottom: 40px; 
-            animation: driftUp 3.5s ease forwards;
-        }
-
-        @keyframes driftUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
     </style>
 </head>
 <body data-theme="day">
 
-    <div class="theme-selector">
-        <div class="current-theme-dot" id="currentThemeDot"></div>
-        <div class="theme-menu" id="themeMenu">
-            <div class="theme-option" style="background: #fff5f5;" data-theme="day"></div>
-            <div class="theme-option" style="background: #000000;" data-theme="night"></div>
-            <div class="theme-option" style="background: #f3f0ff;" data-theme="lavender"></div>
-            <div class="theme-option" style="background: #f0f4f0;" data-theme="forest"></div>
-            <div class="theme-option" style="background: #0f172a;" data-theme="ocean"></div>
+    <header>
+        <p class="header-title">Simple Sudoku Chill</p>
+        <div class="settings-trigger" id="settingsBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </div>
+    </header>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Settings</h2>
+            
+            <div class="setting-row">
+                <span class="setting-label">Haptic Feedback</span>
+                <label class="switch">
+                    <input type="checkbox" id="hapticToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-label" style="text-align: center; margin-bottom: 15px;">Theme</div>
+            <div class="theme-picker">
+                <div class="theme-opt" style="background: #fff5f5;" data-theme="day"></div>
+                <div class="theme-opt" style="background: #000000;" data-theme="night"></div>
+                <div class="theme-opt" style="background: #f3f0ff;" data-theme="lavender"></div>
+                <div class="theme-opt" style="background: #f0f4f0;" data-theme="forest"></div>
+                <div class="theme-opt" style="background: #0f172a;" data-theme="ocean"></div>
+            </div>
+
+            <button class="menu-btn" id="closeSettings" style="width: 100%; padding: 12px; font-size: 0.8rem;">Back to Peace</button>
         </div>
     </div>
 
+    <!-- Win Overlay -->
     <div id="win-overlay">
-        <div class="win-msg">Tranquility Achieved</div>
-        <div class="win-stats" id="winStatsText"></div>
-        <button class="menu-btn" id="returnToPeaceBtn" style="width: 200px;">Return to Peace</button>
+        <div class="win-msg" style="font-size: 1.8rem; font-weight: 200; letter-spacing: 8px; text-transform: uppercase;">Tranquility Achieved</div>
+        <div class="win-stats" id="winStatsText" style="font-size: 0.9rem; opacity: 0.7; margin: 20px 0 40px;"></div>
+        <button class="menu-btn" id="returnToPeaceBtn" style="width: 200px;">New Journey</button>
     </div>
 
+    <!-- Main Menu View -->
     <div id="menu-view" class="view active">
         <div id="hero3DContainer"></div>
-        <h1 style="font-weight: 200; letter-spacing: 8px; margin-bottom: 40px; text-transform: uppercase;">Sudoku Chill</h1>
         <div class="menu-options">
             <div class="menu-btn" id="dailyBtn">Daily Puzzle</div>
             <div class="menu-btn" id="freePlayTrigger">Free Play</div>
@@ -430,16 +489,14 @@
                 <div class="menu-btn diff-btn" data-diff="58">Hard</div>
                 <div class="menu-btn diff-btn" data-diff="64">Extreme</div>
             </div>
-            <div class="settings-header">Settings</div>
-            <div class="menu-btn" id="themeMenuTrigger">Change Theme</div>
         </div>
     </div>
 
+    <!-- Game View -->
     <div id="game-view" class="view">
-        <h1 class="game-title" id="gameModeTitle">Daily Sudoku</h1>
         <div class="game-stats-header">
             <span id="mistakeDisplay">Mistakes: 0</span>
-            <span id="timerDisplay">Time: 00:00</span>
+            <span id="timerDisplay">00:00</span>
         </div>
         <div id="game-container">
             <canvas id="sudokuCanvas"></canvas>
@@ -464,528 +521,234 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('sudokuCanvas');
-        const ctx = canvas.getContext('2d');
-        const statusText = document.getElementById('statusText');
-        const currentThemeDot = document.getElementById('currentThemeDot');
-        const themeMenu = document.getElementById('themeMenu');
+        // DOM Ref
+        const canvas = document.getElementById('sudokuCanvas'), ctx = canvas.getContext('2d');
+        const menuView = document.getElementById('menu-view'), gameView = document.getElementById('game-view');
+        const settingsModal = document.getElementById('settings-modal'), hapticToggle = document.getElementById('hapticToggle');
+        const statusText = document.getElementById('statusText'), winOverlay = document.getElementById('win-overlay');
         const hero3DContainer = document.getElementById('hero3DContainer');
-        const winOverlay = document.getElementById('win-overlay');
-        const winStatsText = document.getElementById('winStatsText');
-        const returnToPeaceBtn = document.getElementById('returnToPeaceBtn');
-        
-        const menuView = document.getElementById('menu-view');
-        const gameView = document.getElementById('game-view');
-        const folder = document.getElementById('difficultyFolder');
-        
-        let DISPLAY_SIZE = Math.min(window.innerWidth - 40, 450);
-        canvas.width = DISPLAY_SIZE;
-        canvas.height = DISPLAY_SIZE;
+
+        let solution = [], puzzle = [], isGiven = [], selectedCell = { r: -1, c: -1 };
+        let isGameOver = false, mistakes = 0, startTime = null, timerInterval = null;
+        let hapticsEnabled = true, winSequenceProgress = 0, DISPLAY_SIZE = Math.min(window.innerWidth - 40, 450);
         let CELL_SIZE = DISPLAY_SIZE / 9;
 
-        let solution = [];
-        let puzzle = [];
-        let isGiven = []; 
-        let selectedCell = { r: -1, c: -1 };
-        let isGameOver = false;
-        
-        // Stats
-        let mistakes = 0;
-        let startTime = null;
-        let timerInterval = null;
+        // --- Haptic Feedback Wrapper ---
+        async function triggerHaptic() {
+            if (!hapticsEnabled) return;
+            // Native Capacitor Check
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+                await window.Capacitor.Plugins.Haptics.impact({ style: 'light' });
+            } else if (navigator.vibrate) {
+                navigator.vibrate(15); // Browser fallback
+            }
+        }
 
-        const quotes = [
-            "Breathe in. Breathe out.", "Focus on the present moment.", "There is no rush.",
-            "The journey is the destination.", "Quiet the mind, find your center.", "Let go of the mistakes of the past.",
-            "One cell at a time.", "Peace begins with a single thought.", "Be patient with yourself.",
-            "This moment is exactly as it should be.", "Relax your shoulders. Take a breath."
-        ];
-        let quoteInterval;
-
-        // Visuals
-        let feedback = Array(9).fill().map(() => Array(9).fill(null));
-        let sparkles = [];
-        let completedFlashes = []; 
-        let winSequenceProgress = 0; 
-
-        // --- Sudoku Logic ---
-
-        function isValid(grid, row, col, num) {
-            for (let i = 0; i < 9; i++) if (grid[row][i] === num || grid[i][col] === num) return false;
-            const startRow = Math.floor(row / 3) * 3, startCol = Math.floor(col / 3) * 3;
-            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (grid[startRow + i][startCol + j] === num) return false;
+        // --- Core Sudoku ---
+        function isValid(grid, r, c, num) {
+            for (let i = 0; i < 9; i++) if (grid[r][i] === num || grid[i][c] === num) return false;
+            const sr = Math.floor(r/3)*3, sc = Math.floor(c/3)*3;
+            for (let i=0; i<3; i++) for (let j=0; j<3; j++) if (grid[sr+i][sc+j] === num) return false;
             return true;
         }
 
-        function fillSudoku(grid, randomFunc = Math.random) {
-            for (let row = 0; row < 9; row++) {
-                for (let col = 0; col < 9; col++) {
-                    if (grid[row][col] === 0) {
-                        const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => randomFunc() - 0.5);
-                        for (let num of nums) {
-                            if (isValid(grid, row, col, num)) {
-                                grid[row][col] = num;
-                                if (fillSudoku(grid, randomFunc)) return true;
-                                grid[row][col] = 0;
-                            }
-                        }
-                        return false;
-                    }
+        function fillSudoku(grid, rand = Math.random) {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (grid[r][c] === 0) {
+                const ns = [1,2,3,4,5,6,7,8,9].sort(() => rand() - 0.5);
+                for (let n of ns) if (isValid(grid, r, c, n)) {
+                    grid[r][c] = n;
+                    if (fillSudoku(grid, rand)) return true;
+                    grid[r][c] = 0;
                 }
+                return false;
             }
             return true;
         }
 
-        function seededRandom(seed) {
-            let x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        }
-
-        // --- View Transitions ---
-
-        function showView(viewId) {
-            const activeView = document.querySelector('.view.active');
-            if (activeView) activeView.classList.remove('active');
-            
-            setTimeout(() => {
-                const newView = document.getElementById(viewId);
-                newView.classList.add('active');
-                if (viewId === 'game-view') render();
-            }, 10);
-        }
-
-        function generatePuzzle(difficulty = 40, isDaily = false) {
-            isGameOver = false; mistakes = 0; startTime = Date.now();
-            winSequenceProgress = 0;
+        function generatePuzzle(diff = 40, isDaily = false) {
+            isGameOver = false; mistakes = 0; startTime = Date.now(); winSequenceProgress = 0;
             document.getElementById('mistakeDisplay').innerText = `Mistakes: 0`;
             startTimer();
-
-            let randFunc = Math.random;
+            let rFunc = Math.random;
             if (isDaily) {
-                const d = new Date();
-                let seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-                randFunc = () => seededRandom(seed++);
-                document.getElementById('gameModeTitle').innerText = "Daily Puzzle";
-            } else {
-                document.getElementById('gameModeTitle').innerText = "Free Play";
+                const d = new Date(); let seed = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+                rFunc = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
             }
-
             let grid = Array(9).fill().map(() => Array(9).fill(0));
-            fillSudoku(grid, randFunc);
-            solution = grid.map(row => [...row]);
-            puzzle = grid.map(row => [...row]);
+            fillSudoku(grid, rFunc);
+            solution = grid.map(r => [...r]); puzzle = grid.map(r => [...r]);
             isGiven = Array(9).fill().map(() => Array(9).fill(false));
             feedback = Array(9).fill().map(() => Array(9).fill(null));
             sparkles = []; completedFlashes = [];
-
-            let attempts = difficulty;
-            while (attempts > 0) {
-                let r = Math.floor(randFunc() * 9), c = Math.floor(randFunc() * 9);
-                if (puzzle[r][c] !== 0) { puzzle[r][c] = 0; attempts--; }
+            while (diff > 0) {
+                let r = Math.floor(rFunc()*9), c = Math.floor(rFunc()*9);
+                if (puzzle[r][c] !== 0) { puzzle[r][c] = 0; diff--; }
             }
             for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(puzzle[r][c] !== 0) isGiven[r][c] = true;
-            
             selectedCell = { r: -1, c: -1 };
-            startQuoteRotation();
             updateNumberPad();
             showView('game-view');
+        }
+
+        function showView(id) {
+            document.querySelector('.view.active').classList.remove('active');
+            setTimeout(() => { document.getElementById(id).classList.add('active'); if(id==='game-view') render(); }, 50);
         }
 
         function startTimer() {
             if(timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 if(isGameOver) return;
-                const sec = Math.floor((Date.now() - startTime) / 1000);
-                const m = Math.floor(sec / 60).toString().padStart(2, '0');
-                const s = (sec % 60).toString().padStart(2, '0');
-                document.getElementById('timerDisplay').innerText = `Time: ${m}:${s}`;
+                const sec = Math.floor((Date.now() - startTime)/1000), m = Math.floor(sec/60).toString().padStart(2,'0'), s = (sec%60).toString().padStart(2,'0');
+                document.getElementById('timerDisplay').innerText = `${m}:${s}`;
             }, 1000);
         }
 
-        function startQuoteRotation() {
-            if (quoteInterval) clearInterval(quoteInterval);
-            statusText.innerText = quotes[Math.floor(Math.random() * quotes.length)];
-            quoteInterval = setInterval(() => {
-                if (isGameOver) return;
-                statusText.classList.add('fade-out');
-                setTimeout(() => {
-                    statusText.innerText = quotes[Math.floor(Math.random() * quotes.length)];
-                    statusText.classList.remove('fade-out');
-                }, 1000);
-            }, 12000);
+        // --- Rendering ---
+        let feedback = [], sparkles = [], completedFlashes = [];
+        function getThemeColors() {
+            const s = getComputedStyle(document.body);
+            return {
+                text: s.getPropertyValue('--text-main').trim(), thick: s.getPropertyValue('--line-thick').trim(), thin: s.getPropertyValue('--line-thin').trim(),
+                bg: s.getPropertyValue('--grid-bg').trim(), hl: s.getPropertyValue('--highlight').trim(), sel: s.getPropertyValue('--selected').trim(),
+                sn: s.getPropertyValue('--same-num-bg').trim(), err: s.getPropertyValue('--error-color').trim(), glow: s.getPropertyValue('--success-glow').trim(),
+                win: s.getPropertyValue('--win-glow').trim(), flash: s.getPropertyValue('--completion-flash').trim()
+            };
         }
-
-        // --- Hero 3D Animation Logic ---
-
-        let scene, camera, renderer, cubeGroup;
-        let targetRotationX = 0, targetRotationY = 0;
-        let mouseX = 0, mouseY = 0;
-
-        function initHero3D() {
-            const width = 300, height = 300;
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-            camera.position.z = 10;
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(width, height);
-            hero3DContainer.appendChild(renderer.domElement);
-
-            cubeGroup = new THREE.Group();
-            scene.add(cubeGroup);
-
-            // Create a 4x4x4 cube
-            const spacing = 1.1;
-            const offset = (3 * spacing) / 2;
-
-            for (let x = 0; x < 4; x++) {
-                for (let y = 0; y < 4; y++) {
-                    for (let z = 0; z < 4; z++) {
-                        // Only draw the outer shell for better aesthetics and performance
-                        if (x === 0 || x === 3 || y === 0 || y === 3 || z === 0 || z === 3) {
-                            const val = Math.random() > 0.7 ? Math.floor(Math.random() * 4) + 1 : null;
-                            const mesh = createCellMesh(val);
-                            mesh.position.set(x * spacing - offset, y * spacing - offset, z * spacing - offset);
-                            cubeGroup.add(mesh);
-                        }
-                    }
-                }
-            }
-
-            // Listen for mouse movements to influence rotation
-            window.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-                mouseY = (e.clientY / window.innerHeight) * 2 - 1;
-            });
-
-            animate3D();
-        }
-
-        function createCellMesh(value) {
-            const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-            const colors = getThemeColors();
-            
-            const material = new THREE.MeshBasicMaterial({
-                color: colors.text,
-                transparent: true,
-                opacity: 0.1,
-                wireframe: false
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-
-            // Add edge lines
-            const edges = new THREE.EdgesGeometry(geometry);
-            const lineMat = new THREE.LineBasicMaterial({ color: colors.lineThick, transparent: true, opacity: 0.3 });
-            const line = new THREE.LineSegments(edges, lineMat);
-            mesh.add(line);
-
-            // If it has a value, draw it on faces
-            if (value) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 64; canvas.height = 64;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = colors.text;
-                ctx.font = 'Bold 40px Segoe UI';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(value, 32, 32);
-
-                const texture = new THREE.CanvasTexture(canvas);
-                const textMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.8 });
-                const textGeo = new THREE.BoxGeometry(0.81, 0.81, 0.81);
-                const textMesh = new THREE.Mesh(textGeo, textMat);
-                mesh.add(textMesh);
-            }
-
-            return mesh;
-        }
-
-        function animate3D() {
-            requestAnimationFrame(animate3D);
-
-            // Natural auto-rotation
-            cubeGroup.rotation.y += 0.003;
-            cubeGroup.rotation.x += 0.002;
-
-            // Influence from mouse
-            cubeGroup.rotation.y += mouseX * 0.01;
-            cubeGroup.rotation.x += mouseY * 0.01;
-
-            renderer.render(scene, camera);
-        }
-
-        function update3DTheme() {
-            if (!cubeGroup) return;
-            const colors = getThemeColors();
-            cubeGroup.children.forEach(cell => {
-                cell.material.color.set(colors.text);
-                cell.children.forEach(child => {
-                    if (child instanceof THREE.LineSegments) {
-                        child.material.color.set(colors.lineThick);
-                    }
-                    if (child.material && child.material.map) {
-                        // Re-draw text texture with new color
-                        const canvas = child.material.map.image;
-                        const ctx = canvas.getContext('2d');
-                        const oldVal = cell.userData.val || (Math.floor(Math.random() * 4) + 1);
-                        ctx.clearRect(0,0,64,64);
-                        ctx.fillStyle = colors.text;
-                        ctx.fillText(oldVal, 32, 32);
-                        child.material.map.needsUpdate = true;
-                    }
-                });
-            });
-        }
-
-        // --- Rendering Engine (Game) ---
 
         function render() {
             if (!gameView.classList.contains('active')) { requestAnimationFrame(render); return; }
-            const colors = getThemeColors();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = colors.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const c = getThemeColors(); ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = c.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
+            const now = Date.now(), fn = (selectedCell.r !== -1 && !isGameOver) ? puzzle[selectedCell.r][selectedCell.c] : 0;
 
-            const now = Date.now();
-            const focusedNum = (selectedCell.r !== -1 && !isGameOver) ? puzzle[selectedCell.r][selectedCell.c] : 0;
-
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    completedFlashes = completedFlashes.filter(f => now - f.time < 1000);
-                    completedFlashes.forEach(f => {
-                        const age = (now - f.time) / 1000;
-                        ctx.fillStyle = colors.completionGlow || colors.glow;
-                        ctx.globalAlpha = (1 - age) * 0.5;
-                        if(f.type === 'row' && f.index === r) ctx.fillRect(0, r * CELL_SIZE, canvas.width, CELL_SIZE);
-                        if(f.type === 'col' && f.index === c) ctx.fillRect(c * CELL_SIZE, 0, CELL_SIZE, canvas.height);
-                        if(f.type === 'box') {
-                            const br = Math.floor(f.index / 3) * 3, bc = (f.index % 3) * 3;
-                            if(r >= br && r < br+3 && c >= bc && c < bc+3) ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                        }
-                    });
-                    ctx.globalAlpha = 1.0;
-
-                    if(focusedNum !== 0 && puzzle[r][c] === focusedNum) {
-                        ctx.fillStyle = colors.sameNumBg;
-                        ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                    }
-
-                    const f = feedback[r][c];
-                    if (f && f.type === 'correct' && f.time > now - 800) {
-                        const age = (now - f.time) / 800;
-                        ctx.fillStyle = colors.glow; ctx.globalAlpha = 1 - age;
-                        ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                        ctx.globalAlpha = 1.0;
-                    }
-                }
+            for (let r=0; r<9; r++) for (let col=0; col<9; col++) {
+                completedFlashes = completedFlashes.filter(f => now - f.time < 800);
+                completedFlashes.forEach(f => {
+                    ctx.fillStyle = c.flash; ctx.globalAlpha = (1 - (now - f.time)/800)*0.4;
+                    if(f.type==='row'&& f.idx===r) ctx.fillRect(0,r*CELL_SIZE,canvas.width,CELL_SIZE);
+                    if(f.type==='col'&& f.idx===col) ctx.fillRect(col*CELL_SIZE,0,CELL_SIZE,canvas.height);
+                    if(f.type==='box') { const br=Math.floor(f.idx/3)*3, bc=(f.idx%3)*3; if(r>=br&&r<br+3&&col>=bc&&col<bc+3) ctx.fillRect(col*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE); }
+                });
+                ctx.globalAlpha = 1.0;
+                if(fn !== 0 && puzzle[r][col] === fn) { ctx.fillStyle = c.sn; ctx.fillRect(col*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE); }
+                const f = feedback[r][col];
+                if (f && f.type === 'correct' && f.time > now-600) { ctx.fillStyle = c.glow; ctx.globalAlpha = 1 - (now-f.time)/600; ctx.fillRect(col*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE); ctx.globalAlpha = 1.0; }
             }
 
             if (selectedCell.r !== -1 && !isGameOver) {
-                ctx.fillStyle = colors.highlight;
-                ctx.fillRect(0, selectedCell.r * CELL_SIZE, canvas.width, CELL_SIZE);
-                ctx.fillRect(selectedCell.c * CELL_SIZE, 0, CELL_SIZE, canvas.height);
-                ctx.fillStyle = colors.selected;
-                ctx.fillRect(selectedCell.c * CELL_SIZE, selectedCell.r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                ctx.fillStyle = c.hl; ctx.fillRect(0,selectedCell.r*CELL_SIZE,canvas.width,CELL_SIZE); ctx.fillRect(selectedCell.c*CELL_SIZE,0,CELL_SIZE,canvas.height);
+                ctx.fillStyle = c.sel; ctx.fillRect(selectedCell.c*CELL_SIZE,selectedCell.r*CELL_SIZE,CELL_SIZE,CELL_SIZE);
             }
 
-            if (isGameOver) {
-                winSequenceProgress = Math.min(1, winSequenceProgress + 0.005);
-                const pulse = Math.sin(now / 1000) * 0.2 + 0.8; 
-                ctx.fillStyle = colors.winGlow;
-                ctx.globalAlpha = winSequenceProgress * pulse;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.globalAlpha = 1.0;
-            }
+            if (isGameOver) { winSequenceProgress = Math.min(1, winSequenceProgress+0.005); ctx.fillStyle = c.win; ctx.globalAlpha = winSequenceProgress * (Math.sin(now/800)*0.1+0.9); ctx.fillRect(0,0,canvas.width,canvas.height); ctx.globalAlpha = 1.0; }
 
-            for (let i = 0; i <= 9; i++) {
-                ctx.beginPath();
-                ctx.lineWidth = (i % 3 === 0) ? 2.5 : 0.8;
-                ctx.strokeStyle = (i % 3 === 0) ? colors.thick : colors.thin;
-                ctx.moveTo(i * CELL_SIZE, 0); ctx.lineTo(i * CELL_SIZE, canvas.height); ctx.stroke();
-                ctx.moveTo(0, i * CELL_SIZE); ctx.lineTo(canvas.width, i * CELL_SIZE); ctx.stroke();
+            for (let i=0; i<=9; i++) {
+                ctx.beginPath(); ctx.lineWidth = (i%3===0)?2.5:0.8; ctx.strokeStyle = (i%3===0)?c.thick:c.thin;
+                ctx.moveTo(i*CELL_SIZE,0); ctx.lineTo(i*CELL_SIZE,canvas.height); ctx.stroke();
+                ctx.moveTo(0,i*CELL_SIZE); ctx.lineTo(canvas.width,i*CELL_SIZE); ctx.stroke();
             }
 
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (puzzle[r][c] !== 0) {
-                        const isIncorrect = feedback[r][c]?.type === 'incorrect';
-                        ctx.fillStyle = isIncorrect ? colors.error : colors.text;
-                        ctx.font = isGiven[r][c] 
-                            ? `500 ${CELL_SIZE * 0.55}px 'Segoe UI', sans-serif`
-                            : `300 ${CELL_SIZE * 0.55}px 'Segoe UI', sans-serif`;
-                        
-                        if (isGameOver) ctx.globalAlpha = 1 - (winSequenceProgress * 0.3);
-                        ctx.fillText(puzzle[r][c], c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2);
-                        ctx.globalAlpha = 1.0;
-                    }
-                }
+            for (let r=0; r<9; r++) for (let col=0; col<9; col++) if (puzzle[r][col] !== 0) {
+                const err = feedback[r][col]?.type === 'incorrect';
+                ctx.fillStyle = err ? c.err : c.text;
+                ctx.font = isGiven[r][col] ? `500 ${CELL_SIZE*0.55}px 'Segoe UI'` : `300 ${CELL_SIZE*0.55}px 'Segoe UI'`;
+                if (isGameOver) ctx.globalAlpha = 1 - (winSequenceProgress*0.3);
+                ctx.fillText(puzzle[r][col], col*CELL_SIZE+CELL_SIZE/2, r*CELL_SIZE+CELL_SIZE/2); ctx.globalAlpha = 1.0;
             }
 
             sparkles = sparkles.filter(s => s.life > 0);
-            for (let s of sparkles) {
-                ctx.fillStyle = colors.text; ctx.globalAlpha = s.life;
-                ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
-                s.x += s.vx; s.y += s.vy; s.life -= 0.02;
-            }
+            for (let s of sparkles) { ctx.fillStyle = c.text; ctx.globalAlpha = s.life; ctx.beginPath(); ctx.arc(s.x, s.y, s.sz, 0, Math.PI*2); ctx.fill(); s.x+=s.vx; s.y+=s.vy; s.life-=0.03; }
             ctx.globalAlpha = 1.0;
             requestAnimationFrame(render);
         }
 
-        function getThemeColors() {
-            const style = getComputedStyle(document.body);
-            return {
-                text: style.getPropertyValue('--text-main').trim(),
-                thick: style.getPropertyValue('--line-thick').trim(),
-                thin: style.getPropertyValue('--line-thin').trim(),
-                bg: style.getPropertyValue('--grid-bg').trim(),
-                highlight: style.getPropertyValue('--highlight').trim(),
-                selected: style.getPropertyValue('--selected').trim(),
-                sameNumBg: style.getPropertyValue('--same-num-bg').trim(),
-                error: style.getPropertyValue('--error-color').trim(),
-                glow: style.getPropertyValue('--success-glow').trim(),
-                winGlow: style.getPropertyValue('--win-glow').trim(),
-                completionGlow: style.getPropertyValue('--completion-flash').trim(),
-                lineThick: style.getPropertyValue('--line-thick').trim()
-            };
+        // --- 3D Hero ---
+        let scene, camera, renderer, cubeGroup;
+        function initHero3D() {
+            scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(45,1,0.1,1000); camera.position.z = 10;
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(260,260);
+            hero3DContainer.appendChild(renderer.domElement);
+            cubeGroup = new THREE.Group(); scene.add(cubeGroup);
+            const space = 1.1, off = (3*space)/2;
+            for(let x=0; x<4; x++) for(let y=0; y<4; y++) for(let z=0; z<4; z++) if(x===0||x===3||y===0||y===3||z===0||z===3){
+                const geo = new THREE.BoxGeometry(0.8,0.8,0.8), mat = new THREE.MeshBasicMaterial({color:getThemeColors().text, transparent:true, opacity:0.05});
+                const m = new THREE.Mesh(geo, mat); m.position.set(x*space-off, y*space-off, z*space-off);
+                const ed = new THREE.EdgesGeometry(geo), lm = new THREE.LineBasicMaterial({color:getThemeColors().thick, transparent:true, opacity:0.2});
+                m.add(new THREE.LineSegments(ed, lm)); cubeGroup.add(m);
+            }
+            animate3D();
+        }
+        function animate3D() { requestAnimationFrame(animate3D); cubeGroup.rotation.y+=0.004; cubeGroup.rotation.x+=0.003; renderer.render(scene, camera); }
+
+        // --- Interaction & Settings ---
+        function applyTheme(t) { document.body.setAttribute('data-theme', t); localStorage.setItem('sudoku-chill-theme', t); document.querySelectorAll('.theme-opt').forEach(o => o.classList.toggle('active', o.dataset.theme === t)); }
+        
+        settingsBtn.onclick = () => { triggerHaptic(); settingsModal.classList.add('active'); };
+        closeSettings.onclick = () => { triggerHaptic(); settingsModal.classList.remove('active'); };
+        hapticToggle.onchange = (e) => { hapticsEnabled = e.target.checked; localStorage.setItem('sudoku-haptics', hapticsEnabled); triggerHaptic(); };
+
+        document.querySelectorAll('.theme-opt').forEach(opt => opt.onclick = () => { applyTheme(opt.dataset.theme); triggerHaptic(); });
+        document.getElementById('freePlayTrigger').onclick = () => { triggerHaptic(); document.getElementById('difficultyFolder').classList.toggle('open'); };
+        document.querySelectorAll('.diff-btn').forEach(b => b.onclick = () => { triggerHaptic(); generatePuzzle(parseInt(b.dataset.diff)); });
+        document.getElementById('dailyBtn').onclick = () => { triggerHaptic(); generatePuzzle(45, true); };
+        document.getElementById('backBtn').onclick = () => { triggerHaptic(); showView('menu-view'); puzzle=[]; };
+        document.getElementById('resetBtn').onclick = () => { triggerHaptic(); for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(!isGiven[r][c]) { puzzle[r][c]=0; feedback[r][c]=null; } updateNumberPad(); };
+
+        canvas.onclick = (e) => {
+            const rect = canvas.getBoundingClientRect(), x = e.clientX-rect.left, y = e.clientY-rect.top;
+            const c = Math.floor(x/CELL_SIZE), r = Math.floor(y/CELL_SIZE);
+            if(r>=0&&r<9&&c>=0&&c<9) { selectedCell = {r,c}; triggerHaptic(); }
+        };
+
+        document.querySelectorAll('.num-btn').forEach(b => b.onclick = () => {
+            if(selectedCell.r===-1 || isGameOver || isGiven[selectedCell.r][selectedCell.c]) return;
+            const val = parseInt(b.dataset.val), r = selectedCell.r, c = selectedCell.c;
+            triggerHaptic();
+            if(val===0) { puzzle[r][c]=0; feedback[r][c]=null; }
+            else {
+                if(val!==solution[r][c] && puzzle[r][c]!==val) { mistakes++; document.getElementById('mistakeDisplay').innerText = `Mistakes: ${mistakes}`; }
+                puzzle[r][c]=val;
+                if(val===solution[r][c]) {
+                    feedback[r][c]={type:'correct', time:Date.now()}; sparkles.push(...Array(8).fill(0).map(()=>({x:c*CELL_SIZE+CELL_SIZE/2, y:r*CELL_SIZE+CELL_SIZE/2, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3, life:1.0, sz:Math.random()*2+1})));
+                    checkCompletion(r,c);
+                } else feedback[r][c]={type:'incorrect', time:Date.now()};
+            }
+            updateNumberPad(); checkWin();
+        });
+
+        function checkCompletion(r,c) {
+            if(puzzle[r].every((v,i)=>v===solution[r][i])) completedFlashes.push({type:'row', idx:r, time:Date.now()});
+            let colOk = true; for(let i=0; i<9; i++) if(puzzle[i][c]!==solution[i][c]) colOk=false;
+            if(colOk) completedFlashes.push({type:'col', idx:c, time:Date.now()});
+            const br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3; let boxOk=true;
+            for(let i=br; i<br+3; i++) for(let j=bc; j<bc+3; j++) if(puzzle[i][j]!==solution[i][j]) boxOk=false;
+            if(boxOk) completedFlashes.push({type:'box', idx:Math.floor(r/3)*3+Math.floor(c/3), time:Date.now()});
         }
 
         function updateNumberPad() {
             const counts = Array(10).fill(0);
-            for(let r=0; r<9; r++) {
-                for(let c=0; c<9; c++) {
-                    if(puzzle[r][c] === solution[r][c]) counts[puzzle[r][c]]++;
-                }
-            }
-            document.querySelectorAll('.num-btn[data-val]').forEach(btn => {
-                const val = parseInt(btn.dataset.val);
-                if(val === 0) return;
-                if(counts[val] === 9) btn.classList.add('completed');
-                else btn.classList.remove('completed');
-            });
+            for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(puzzle[r][c]===solution[r][c]) counts[puzzle[r][c]]++;
+            document.querySelectorAll('.num-btn[data-val]').forEach(b => { const v=parseInt(b.dataset.val); if(v>0) b.classList.toggle('completed', counts[v]===9); });
         }
-
-        function triggerSparkles(r, c) {
-            const centerX = c * CELL_SIZE + CELL_SIZE / 2, centerY = r * CELL_SIZE + CELL_SIZE / 2;
-            for (let i = 0; i < 12; i++) {
-                sparkles.push({
-                    x: centerX, y: centerY, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3,
-                    life: 1.0, size: Math.random() * 3 + 1
-                });
-            }
-        }
-
-        function checkCompletions(r, c) {
-            if(puzzle[r].every((val, idx) => val === solution[r][idx])) completedFlashes.push({type:'row', index:r, time:Date.now()});
-            let colComplete = true;
-            for(let i=0; i<9; i++) if(puzzle[i][c] !== solution[i][c]) colComplete = false;
-            if(colComplete) completedFlashes.push({type:'col', index:c, time:Date.now()});
-            const br = Math.floor(r/3)*3, bc = Math.floor(c/3)*3;
-            let boxComplete = true;
-            for(let i=br; i<br+3; i++) for(let j=bc; j<bc+3; j++) if(puzzle[i][j] !== solution[i][j]) boxComplete = false;
-            if(boxComplete) completedFlashes.push({type:'box', index:(Math.floor(r/3)*3 + Math.floor(c/3)), time:Date.now()});
-        }
-
-        // --- Persistence Logic ---
-        function applyTheme(theme) {
-            document.body.setAttribute('data-theme', theme);
-            localStorage.setItem('sudoku-chill-theme', theme);
-            update3DTheme();
-        }
-
-        function loadSavedTheme() {
-            const savedTheme = localStorage.getItem('sudoku-chill-theme');
-            if (savedTheme) {
-                applyTheme(savedTheme);
-            }
-        }
-
-        // --- Event Listeners ---
-
-        document.getElementById('dailyBtn').addEventListener('click', () => generatePuzzle(45, true));
-        document.getElementById('freePlayTrigger').addEventListener('click', () => folder.classList.toggle('open'));
-        document.querySelectorAll('.diff-btn').forEach(btn => {
-            btn.addEventListener('click', () => generatePuzzle(parseInt(btn.getAttribute('data-diff')), false));
-        });
-        document.getElementById('themeMenuTrigger').addEventListener('click', (e) => { e.stopPropagation(); themeMenu.classList.toggle('active'); });
-        document.getElementById('backBtn').addEventListener('click', () => showView('menu-view'));
-        document.getElementById('resetBtn').addEventListener('click', () => {
-            for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(!isGiven[r][c]) { puzzle[r][c] = 0; feedback[r][c] = null; }
-            updateNumberPad();
-        });
-
-        canvas.addEventListener('click', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left, y = e.clientY - rect.top;
-            const c = Math.floor(x / CELL_SIZE), r = Math.floor(y / CELL_SIZE);
-            if (r >= 0 && r < 9 && c >= 0 && c < 9) selectedCell = { r, c };
-        });
-
-        document.querySelectorAll('.num-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (selectedCell.r === -1 || isGameOver) return;
-                const { r, c } = selectedCell;
-                if (isGiven[r][c]) return;
-                const val = parseInt(btn.getAttribute('data-val'));
-                if (val === 0) { puzzle[r][c] = 0; feedback[r][c] = null; }
-                else {
-                    if (val !== solution[r][c] && puzzle[r][c] !== val) {
-                        mistakes++;
-                        document.getElementById('mistakeDisplay').innerText = `Mistakes: ${mistakes}`;
-                    }
-                    puzzle[r][c] = val;
-                    if (val === solution[r][c]) {
-                        feedback[r][c] = { type: 'correct', time: Date.now() };
-                        triggerSparkles(r, c);
-                        checkCompletions(r, c);
-                    } else {
-                        feedback[r][c] = { type: 'incorrect', time: Date.now() };
-                    }
-                }
-                updateNumberPad();
-                checkWin();
-            });
-        });
 
         function checkWin() {
-            for(let r=0; r<9; r++) for(let c=0; c<9; c++) if (puzzle[r][c] !== solution[r][c]) return;
-            isGameOver = true;
-            const finalSec = Math.floor((Date.now() - startTime) / 1000);
-            const m = Math.floor(finalSec / 60), s = finalSec % 60;
-            winStatsText.innerText = `Time: ${m}m ${s}s • Mistakes: ${mistakes}`;
-            setTimeout(() => {
-                winOverlay.classList.add('active');
-            }, 1500);
+            for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(puzzle[r][c]!==solution[r][c]) return;
+            isGameOver=true; const sec = Math.floor((Date.now()-startTime)/1000), m=Math.floor(sec/60), s=sec%60;
+            document.getElementById('winStatsText').innerText = `Time: ${m}m ${s}s • Mistakes: ${mistakes}`;
+            setTimeout(() => winOverlay.classList.add('active'), 1500);
         }
 
-        returnToPeaceBtn.addEventListener('click', () => {
-            winOverlay.classList.remove('active');
-            showView('menu-view');
-            isGameOver = false;
-            winSequenceProgress = 0;
-            puzzle = [];
-            solution = [];
-        });
+        document.getElementById('returnToPeaceBtn').onclick = () => { triggerHaptic(); winOverlay.classList.remove('active'); showView('menu-view'); isGameOver=false; puzzle=[]; solution=[]; };
 
-        currentThemeDot.addEventListener('click', (e) => { e.stopPropagation(); themeMenu.classList.toggle('active'); });
-        document.querySelectorAll('.theme-option').forEach(opt => {
-            opt.addEventListener('click', () => { 
-                applyTheme(opt.getAttribute('data-theme'));
-                themeMenu.classList.remove('active'); 
-            });
-        });
-        window.addEventListener('click', () => themeMenu.classList.remove('active'));
-
-        window.onload = () => { 
-            loadSavedTheme(); 
-            initHero3D();
-            render(); 
+        window.onload = () => {
+            const st = localStorage.getItem('sudoku-chill-theme') || 'day'; applyTheme(st);
+            const sh = localStorage.getItem('sudoku-haptics'); if(sh !== null) { hapticsEnabled = sh === 'true'; hapticToggle.checked = hapticsEnabled; }
+            initHero3D(); render();
         };
 
-        window.addEventListener('resize', () => {
-            DISPLAY_SIZE = Math.min(window.innerWidth - 40, 450);
-            canvas.width = DISPLAY_SIZE; canvas.height = DISPLAY_SIZE; CELL_SIZE = DISPLAY_SIZE / 9;
-        });
+        window.onresize = () => { DISPLAY_SIZE = Math.min(window.innerWidth-40, 450); canvas.width = DISPLAY_SIZE; canvas.height = DISPLAY_SIZE; CELL_SIZE = DISPLAY_SIZE/9; };
     </script>
 </body>
 </html>
