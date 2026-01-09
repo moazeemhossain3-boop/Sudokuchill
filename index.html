@@ -26,6 +26,8 @@
             --disabled-num: #d1d5db;
             --win-glow: rgba(214, 158, 158, 0.4);
             --modal-bg: rgba(255, 255, 255, 0.8);
+            --progress-bg: rgba(0,0,0,0.1);
+            --progress-fill: #967272;
         }
 
         [data-theme="night"] {
@@ -47,6 +49,8 @@
             --disabled-num: #1a1512;
             --win-glow: rgba(255, 204, 175, 0.2);
             --modal-bg: rgba(20, 15, 12, 0.9);
+            --progress-bg: rgba(255, 255, 255, 0.1);
+            --progress-fill: #d1a68d;
         }
 
         [data-theme="lavender"] {
@@ -68,6 +72,7 @@
             --disabled-num: #cbd5e1;
             --win-glow: rgba(185, 177, 214, 0.4);
             --modal-bg: rgba(243, 240, 255, 0.9);
+            --progress-fill: #8476aa;
         }
 
         [data-theme="forest"] {
@@ -89,6 +94,7 @@
             --disabled-num: #cbd5e1;
             --win-glow: rgba(168, 187, 168, 0.4);
             --modal-bg: rgba(240, 244, 240, 0.9);
+            --progress-fill: #5b705b;
         }
 
         [data-theme="ocean"] {
@@ -110,6 +116,7 @@
             --disabled-num: #020617;
             --win-glow: rgba(56, 189, 248, 0.2);
             --modal-bg: rgba(15, 23, 42, 0.9);
+            --progress-fill: #38bdf8;
         }
 
         body {
@@ -218,6 +225,48 @@
         }
 
         .menu-btn:active { transform: scale(0.98); opacity: 0.8; }
+
+        /* --- Resume Card Style --- */
+        #resumeGameBtn {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 12px;
+        }
+        
+        #resumeGameBtn.visible {
+            display: flex;
+        }
+
+        .resume-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .resume-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        .progress-bar-container {
+            width: 60%;
+            height: 2px;
+            background-color: var(--progress-bg);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--progress-fill);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
 
         .folder-content {
             max-height: 0;
@@ -347,6 +396,17 @@
             opacity: 0.6;
             letter-spacing: 1px;
             text-transform: uppercase;
+        }
+
+        .game-title {
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin: 0 0 15px 0;
+            color: var(--text-main);
+            text-transform: uppercase;
+            font-size: 1.1rem;
+            text-align: center;
+            width: 100%;
         }
 
         #game-container {
@@ -481,6 +541,18 @@
         <div id="hero3DContainer"></div>
         <div class="menu-options">
             <div class="menu-btn" id="dailyBtn">Daily Puzzle</div>
+            
+            <!-- Dynamic Resume Button for Free Play -->
+            <div class="menu-btn" id="resumeGameBtn">
+                <div class="resume-content">
+                    <svg class="resume-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Resume Journey
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="resumeProgressFill"></div>
+                </div>
+            </div>
+
             <div class="menu-btn" id="freePlayTrigger">Free Play</div>
             <div class="folder-content" id="difficultyFolder">
                 <div class="menu-btn diff-btn" data-diff="30">Casual</div>
@@ -494,6 +566,7 @@
 
     <!-- Game View -->
     <div id="game-view" class="view">
+        <h1 class="game-title" id="gameModeTitle">Daily Puzzle</h1>
         <div class="game-stats-header">
             <span id="mistakeDisplay">Mistakes: 0</span>
             <span id="timerDisplay">00:00</span>
@@ -527,11 +600,22 @@
         const settingsModal = document.getElementById('settings-modal'), hapticToggle = document.getElementById('hapticToggle');
         const statusText = document.getElementById('statusText'), winOverlay = document.getElementById('win-overlay');
         const hero3DContainer = document.getElementById('hero3DContainer');
+        const resumeGameBtn = document.getElementById('resumeGameBtn'), resumeProgressFill = document.getElementById('resumeProgressFill');
 
         let solution = [], puzzle = [], isGiven = [], selectedCell = { r: -1, c: -1 };
         let isGameOver = false, mistakes = 0, startTime = null, timerInterval = null;
         let hapticsEnabled = true, winSequenceProgress = 0, DISPLAY_SIZE = Math.min(window.innerWidth - 40, 450);
         let CELL_SIZE = DISPLAY_SIZE / 9;
+        
+        let currentGameMode = 'free'; // 'free' or 'daily'
+
+        const quotes = [
+            "Breathe in. Breathe out.", "Focus on the present moment.", "There is no rush.",
+            "The journey is the destination.", "Quiet the mind, find your center.", "Let go of the mistakes of the past.",
+            "One cell at a time.", "Peace begins with a single thought.", "Be patient with yourself.",
+            "This moment is exactly as it should be.", "Relax your shoulders. Take a breath."
+        ];
+        let quoteInterval;
 
         // --- Haptic Feedback Wrapper ---
         async function triggerHaptic() {
@@ -540,7 +624,7 @@
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
                 await window.Capacitor.Plugins.Haptics.impact({ style: 'light' });
             } else if (navigator.vibrate) {
-                navigator.vibrate(15); // Browser fallback
+                navigator.vibrate(15); 
             }
         }
 
@@ -565,15 +649,106 @@
             return true;
         }
 
+        // --- State Management ---
+        function getTodayString() {
+            const d = new Date();
+            return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+        }
+
+        function saveGameState() {
+            if (isGameOver) return; 
+            const state = {
+                puzzle: puzzle,
+                solution: solution,
+                isGiven: isGiven,
+                mistakes: mistakes,
+                elapsed: Math.floor((Date.now() - startTime) / 1000),
+                mode: currentGameMode,
+                date: getTodayString()
+            };
+            if (currentGameMode === 'daily') {
+                localStorage.setItem('sudoku-daily-state', JSON.stringify(state));
+            } else {
+                localStorage.setItem('sudoku-free-state', JSON.stringify(state));
+            }
+            updateMenuUI();
+        }
+
+        function loadDailyPuzzle() {
+            const saved = JSON.parse(localStorage.getItem('sudoku-daily-state'));
+            const today = getTodayString();
+            
+            if (saved && saved.date === today && !saved.completed) {
+                restoreGame(saved);
+            } else {
+                // Generate new daily
+                generatePuzzle(45, true); 
+            }
+        }
+
+        function restoreGame(state) {
+            isGameOver = false;
+            winSequenceProgress = 0;
+            puzzle = state.puzzle;
+            solution = state.solution;
+            isGiven = state.isGiven;
+            mistakes = state.mistakes;
+            currentGameMode = state.mode;
+            
+            // Adjust start time to account for previously elapsed time
+            startTime = Date.now() - (state.elapsed * 1000);
+            
+            document.getElementById('mistakeDisplay').innerText = `Mistakes: ${mistakes}`;
+            document.getElementById('gameModeTitle').innerText = currentGameMode === 'daily' ? "Daily Puzzle" : "Free Play";
+            
+            selectedCell = { r: -1, c: -1 };
+            updateNumberPad();
+            startTimer();
+            startQuoteRotation();
+            showView('game-view');
+        }
+
+        function updateMenuUI() {
+            const freeSave = JSON.parse(localStorage.getItem('sudoku-free-state'));
+            if (freeSave && !freeSave.completed && freeSave.mode === 'free') {
+                resumeGameBtn.classList.add('visible');
+                
+                // Calculate progress
+                let totalCells = 81;
+                let givenCount = 0;
+                let filledCount = 0;
+                
+                for(let r=0; r<9; r++){
+                    for(let c=0; c<9; c++){
+                        if(freeSave.isGiven[r][c]) givenCount++;
+                        if(freeSave.puzzle[r][c] !== 0) filledCount++;
+                    }
+                }
+                
+                const progress = Math.max(5, ((filledCount - givenCount) / (totalCells - givenCount)) * 100);
+                resumeProgressFill.style.width = `${progress}%`;
+                
+                resumeGameBtn.onclick = () => { triggerHaptic(); restoreGame(freeSave); };
+            } else {
+                resumeGameBtn.classList.remove('visible');
+            }
+        }
+
         function generatePuzzle(diff = 40, isDaily = false) {
+            currentGameMode = isDaily ? 'daily' : 'free';
             isGameOver = false; mistakes = 0; startTime = Date.now(); winSequenceProgress = 0;
             document.getElementById('mistakeDisplay').innerText = `Mistakes: 0`;
             startTimer();
+            
             let rFunc = Math.random;
             if (isDaily) {
                 const d = new Date(); let seed = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
                 rFunc = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
+                document.getElementById('gameModeTitle').innerText = "Daily Puzzle";
+            } else {
+                document.getElementById('gameModeTitle').innerText = "Free Play";
             }
+
             let grid = Array(9).fill().map(() => Array(9).fill(0));
             fillSudoku(grid, rFunc);
             solution = grid.map(r => [...r]); puzzle = grid.map(r => [...r]);
@@ -585,7 +760,10 @@
                 if (puzzle[r][c] !== 0) { puzzle[r][c] = 0; diff--; }
             }
             for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(puzzle[r][c] !== 0) isGiven[r][c] = true;
+            
             selectedCell = { r: -1, c: -1 };
+            saveGameState(); // Save initial state
+            startQuoteRotation();
             updateNumberPad();
             showView('game-view');
         }
@@ -602,6 +780,19 @@
                 const sec = Math.floor((Date.now() - startTime)/1000), m = Math.floor(sec/60).toString().padStart(2,'0'), s = (sec%60).toString().padStart(2,'0');
                 document.getElementById('timerDisplay').innerText = `${m}:${s}`;
             }, 1000);
+        }
+
+        function startQuoteRotation() {
+            if (quoteInterval) clearInterval(quoteInterval);
+            statusText.innerText = quotes[Math.floor(Math.random() * quotes.length)];
+            quoteInterval = setInterval(() => {
+                if (isGameOver) return;
+                statusText.classList.add('fade-out');
+                setTimeout(() => {
+                    statusText.innerText = quotes[Math.floor(Math.random() * quotes.length)];
+                    statusText.classList.remove('fade-out');
+                }, 1000);
+            }, 12000);
         }
 
         // --- Rendering ---
@@ -692,9 +883,13 @@
         document.querySelectorAll('.theme-opt').forEach(opt => opt.onclick = () => { applyTheme(opt.dataset.theme); });
         document.getElementById('freePlayTrigger').onclick = () => { document.getElementById('difficultyFolder').classList.toggle('open'); };
         document.querySelectorAll('.diff-btn').forEach(b => b.onclick = () => { generatePuzzle(parseInt(b.dataset.diff)); });
-        document.getElementById('dailyBtn').onclick = () => { generatePuzzle(45, true); };
-        document.getElementById('backBtn').onclick = () => { showView('menu-view'); puzzle=[]; };
-        document.getElementById('resetBtn').onclick = () => { for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(!isGiven[r][c]) { puzzle[r][c]=0; feedback[r][c]=null; } updateNumberPad(); };
+        document.getElementById('dailyBtn').onclick = () => { loadDailyPuzzle(); };
+        document.getElementById('backBtn').onclick = () => { showView('menu-view'); saveGameState(); updateMenuUI(); };
+        document.getElementById('resetBtn').onclick = () => { 
+            for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(!isGiven[r][c]) { puzzle[r][c]=0; feedback[r][c]=null; } 
+            updateNumberPad(); 
+            saveGameState();
+        };
 
         canvas.onclick = (e) => {
             const rect = canvas.getBoundingClientRect(), x = e.clientX-rect.left, y = e.clientY-rect.top;
@@ -717,7 +912,9 @@
                     triggerHaptic(); // Only triggered on CORRECT number
                 } else feedback[r][c]={type:'incorrect', time:Date.now()};
             }
-            updateNumberPad(); checkWin();
+            updateNumberPad(); 
+            saveGameState(); // Auto-save after move
+            checkWin();
         });
 
         function checkCompletion(r,c) {
@@ -737,16 +934,33 @@
 
         function checkWin() {
             for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(puzzle[r][c]!==solution[r][c]) return;
-            isGameOver=true; const sec = Math.floor((Date.now()-startTime)/1000), m=Math.floor(sec/60), s=sec%60;
+            isGameOver=true; 
+            
+            // Mark completed in save
+            const key = currentGameMode === 'daily' ? 'sudoku-daily-state' : 'sudoku-free-state';
+            const state = JSON.parse(localStorage.getItem(key));
+            if (state) {
+                state.completed = true;
+                localStorage.setItem(key, JSON.stringify(state));
+            }
+            updateMenuUI();
+
+            const sec = Math.floor((Date.now()-startTime)/1000), m=Math.floor(sec/60), s=sec%60;
             document.getElementById('winStatsText').innerText = `Time: ${m}m ${s}s • Mistakes: ${mistakes}`;
             setTimeout(() => winOverlay.classList.add('active'), 1500);
         }
 
-        document.getElementById('returnToPeaceBtn').onclick = () => { winOverlay.classList.remove('active'); showView('menu-view'); isGameOver=false; puzzle=[]; solution=[]; };
+        document.getElementById('returnToPeaceBtn').onclick = () => { 
+            winOverlay.classList.remove('active'); 
+            showView('menu-view'); 
+            isGameOver=false; puzzle=[]; solution=[]; 
+            updateMenuUI();
+        };
 
         window.onload = () => {
             const st = localStorage.getItem('sudoku-chill-theme') || 'day'; applyTheme(st);
             const sh = localStorage.getItem('sudoku-haptics'); if(sh !== null) { hapticsEnabled = sh === 'true'; hapticToggle.checked = hapticsEnabled; }
+            updateMenuUI();
             initHero3D(); render();
         };
 
