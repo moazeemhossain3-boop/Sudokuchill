@@ -685,34 +685,36 @@
         // --- Interaction & Settings ---
         function applyTheme(t) { document.body.setAttribute('data-theme', t); localStorage.setItem('sudoku-chill-theme', t); document.querySelectorAll('.theme-opt').forEach(o => o.classList.toggle('active', o.dataset.theme === t)); }
         
-        settingsBtn.onclick = () => { triggerHaptic(); settingsModal.classList.add('active'); };
-        closeSettings.onclick = () => { triggerHaptic(); settingsModal.classList.remove('active'); };
-        hapticToggle.onchange = (e) => { hapticsEnabled = e.target.checked; localStorage.setItem('sudoku-haptics', hapticsEnabled); triggerHaptic(); };
+        settingsBtn.onclick = () => { settingsModal.classList.add('active'); };
+        closeSettings.onclick = () => { settingsModal.classList.remove('active'); };
+        hapticToggle.onchange = (e) => { hapticsEnabled = e.target.checked; localStorage.setItem('sudoku-haptics', hapticsEnabled); };
 
-        document.querySelectorAll('.theme-opt').forEach(opt => opt.onclick = () => { applyTheme(opt.dataset.theme); triggerHaptic(); });
-        document.getElementById('freePlayTrigger').onclick = () => { triggerHaptic(); document.getElementById('difficultyFolder').classList.toggle('open'); };
-        document.querySelectorAll('.diff-btn').forEach(b => b.onclick = () => { triggerHaptic(); generatePuzzle(parseInt(b.dataset.diff)); });
-        document.getElementById('dailyBtn').onclick = () => { triggerHaptic(); generatePuzzle(45, true); };
-        document.getElementById('backBtn').onclick = () => { triggerHaptic(); showView('menu-view'); puzzle=[]; };
-        document.getElementById('resetBtn').onclick = () => { triggerHaptic(); for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(!isGiven[r][c]) { puzzle[r][c]=0; feedback[r][c]=null; } updateNumberPad(); };
+        document.querySelectorAll('.theme-opt').forEach(opt => opt.onclick = () => { applyTheme(opt.dataset.theme); });
+        document.getElementById('freePlayTrigger').onclick = () => { document.getElementById('difficultyFolder').classList.toggle('open'); };
+        document.querySelectorAll('.diff-btn').forEach(b => b.onclick = () => { generatePuzzle(parseInt(b.dataset.diff)); });
+        document.getElementById('dailyBtn').onclick = () => { generatePuzzle(45, true); };
+        document.getElementById('backBtn').onclick = () => { showView('menu-view'); puzzle=[]; };
+        document.getElementById('resetBtn').onclick = () => { for(let r=0; r<9; r++) for(let c=0; c<9; c++) if(!isGiven[r][c]) { puzzle[r][c]=0; feedback[r][c]=null; } updateNumberPad(); };
 
         canvas.onclick = (e) => {
             const rect = canvas.getBoundingClientRect(), x = e.clientX-rect.left, y = e.clientY-rect.top;
             const c = Math.floor(x/CELL_SIZE), r = Math.floor(y/CELL_SIZE);
-            if(r>=0&&r<9&&c>=0&&c<9) { selectedCell = {r,c}; triggerHaptic(); }
+            if(r>=0&&r<9&&c>=0&&c<9) { selectedCell = {r,c}; }
         };
 
         document.querySelectorAll('.num-btn').forEach(b => b.onclick = () => {
             if(selectedCell.r===-1 || isGameOver || isGiven[selectedCell.r][selectedCell.c]) return;
             const val = parseInt(b.dataset.val), r = selectedCell.r, c = selectedCell.c;
-            triggerHaptic();
+            
             if(val===0) { puzzle[r][c]=0; feedback[r][c]=null; }
             else {
                 if(val!==solution[r][c] && puzzle[r][c]!==val) { mistakes++; document.getElementById('mistakeDisplay').innerText = `Mistakes: ${mistakes}`; }
                 puzzle[r][c]=val;
                 if(val===solution[r][c]) {
-                    feedback[r][c]={type:'correct', time:Date.now()}; sparkles.push(...Array(8).fill(0).map(()=>({x:c*CELL_SIZE+CELL_SIZE/2, y:r*CELL_SIZE+CELL_SIZE/2, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3, life:1.0, sz:Math.random()*2+1})));
+                    feedback[r][c]={type:'correct', time:Date.now()}; 
+                    sparkles.push(...Array(8).fill(0).map(()=>({x:c*CELL_SIZE+CELL_SIZE/2, y:r*CELL_SIZE+CELL_SIZE/2, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3, life:1.0, sz:Math.random()*2+1})));
                     checkCompletion(r,c);
+                    triggerHaptic(); // Only triggered on CORRECT number
                 } else feedback[r][c]={type:'incorrect', time:Date.now()};
             }
             updateNumberPad(); checkWin();
@@ -740,7 +742,7 @@
             setTimeout(() => winOverlay.classList.add('active'), 1500);
         }
 
-        document.getElementById('returnToPeaceBtn').onclick = () => { triggerHaptic(); winOverlay.classList.remove('active'); showView('menu-view'); isGameOver=false; puzzle=[]; solution=[]; };
+        document.getElementById('returnToPeaceBtn').onclick = () => { winOverlay.classList.remove('active'); showView('menu-view'); isGameOver=false; puzzle=[]; solution=[]; };
 
         window.onload = () => {
             const st = localStorage.getItem('sudoku-chill-theme') || 'day'; applyTheme(st);
